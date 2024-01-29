@@ -1,31 +1,68 @@
 import os
 import sys
-from sqlalchemy import Column, ForeignKey, Integer, String
+# Exportamos table para poder crear una tabla auxiliar
+from sqlalchemy import Column, ForeignKey, Integer, String, Table
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy import create_engine
 from eralchemy2 import render_er
 
+# es una función que se crea para hacer una base(plantilla) que se mete
+# en el espacio de memoria Base para poder reutilizarla en los modelos.
+# Usamos Base en todos los modelos y así no tenemos que poner db en cada columna.
 Base = declarative_base()
 
-class Person(Base):
-    __tablename__ = 'person'
-    # Here we define columns for the table person
-    # Notice that each column is also a normal Python instance attribute.
+# Sería la tabla padre
+class User(Base):
+    __tablename__ = 'user'
     id = Column(Integer, primary_key=True)
-    name = Column(String(250), nullable=False)
+    user_name = Column(String(250), nullable=True)
+    first_name = Column(String(250), nullable=True)
+    last_name = Column(String(250), nullable=True)
+    email = Column(String(250), nullable=True)
 
-class Address(Base):
-    __tablename__ = 'address'
-    # Here we define columns for the table address.
-    # Notice that each column is also a normal Python instance attribute.
+
+class Comment(Base):
+    __tablename__ = 'comment'
     id = Column(Integer, primary_key=True)
-    street_name = Column(String(250))
-    street_number = Column(String(250))
-    post_code = Column(String(250), nullable=False)
-    person_id = Column(Integer, ForeignKey('person.id'))
-    person = relationship(Person)
+    comment_text = Column(String(250), nullable=True)
+    author_id = Column(Integer, ForeignKey('user.id'))
+    post_id = Column(Integer, ForeignKey('post.id'))
+    # Las foreing key se ponen en las bases secundarias 
 
-    def to_dict(self):
+
+class Post(Base):
+    __tablename__ = 'post'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('user.id'))
+
+class Media(Base):
+    __tablename__ = 'media'
+    id = Column(Integer, primary_key=True)
+    type = Column(String(250), nullable=True)
+    url = Column(String(250), nullable=True)
+    post_id = Column(Integer, ForeignKey('post.id'))
+
+# Creamos esta base para coger el id del follower y meterlo en la tabla auxiliar
+class Follower(Base):
+    __tablename__ = 'follower'
+    id = Column(Integer, primary_key=True)
+
+# Relacion de muchos a muchos / many to many
+# Tenemos que definir un modelo 
+    # importar Table en: from sqlalchemy import Column, ForeignKey, Integer, String, Table
+# En este caso, crearemos una tabla followers para relacionar followers y user (Ya que un user puede seguir a muchos followers,
+# y followers puede ser seguido por muchos y a la vez seguir a muchos)
+# También son foreign key porque ya existen esos id en sus respectivas tablas/modelos
+# En la documentacion de sql aparece esta plantilla que tenemos que usar en las relaciones del many to many
+    # Lo de Base.metadata no sale en la documentacion, lo ponemos para no tener que poner db, como hemos puesto 
+        # Base = declarative_base() y la documentación lo hace poniendo db en cada columna
+# necesitan ambos se las primary key de la tabla para que el usuario que siga al otro usuario no pueda hacerlo dos veces
+followers = Table('followers', Base.metadata,
+    Column('user_been_followed_id', Integer, ForeignKey('user.id'), primary_key=True),
+    Column('user_following_id', Integer, ForeignKey('follower.id'), primary_key=True)                
+)
+
+def to_dict(self):
         return {}
 
 ## Draw from SQLAlchemy base
